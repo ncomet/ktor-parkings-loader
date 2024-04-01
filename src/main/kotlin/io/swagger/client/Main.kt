@@ -79,9 +79,11 @@ fun randomDigit(): Int = (0..9).random()
 fun randomLicencePlate(): String =
     "${randomLetter()}${randomLetter()}-${randomDigit()}${randomDigit()}${randomDigit()}-${randomLetter()}${randomLetter()}"
 
+const val logActions = false
+
 suspend fun main() {
     coroutineScope {
-        val parkingIds = (0 until 10_000).map {
+        val parkingIds = (0 until 30_000).map {
             async {
                 DefaultApi().parkingsPost(
                     RestNewParking(
@@ -93,15 +95,17 @@ suspend fun main() {
             }
         }.awaitAll()
 
-        for (i in generateSequence(0) { it }) {
-            //launch {
-            when ((1..100).random()) {
-                in 1..35 -> bookParkingSpot(parkingIds)
-                in 36..70 -> freeParkingSpot(parkingIds)
-                in 71..85 -> getParking(parkingIds)
-                in 86..100 -> getParkingSpot(parkingIds)
-            }
-            //}
+        while (true) {
+            (0 until 30_000).map {
+                launch {
+                    when ((1..100).random()) {
+                        in 1..35 -> bookParkingSpot(parkingIds)
+                        in 36..70 -> freeParkingSpot(parkingIds)
+                        in 71..85 -> getParking(parkingIds)
+                        in 86..100 -> getParkingSpot(parkingIds)
+                    }
+                }
+            }.joinAll()
         }
     }
 }
@@ -113,7 +117,7 @@ private fun getParkingSpot(parkingIds: List<String>) {
         id = parkingId,
         spotId = spotId.toString(),
     )
-    println("⬇️Retrieved parking=$parkingId spot=$spotId!")
+    if (logActions) println("⬇️Retrieved parking=$parkingId spot=$spotId!")
 }
 
 private fun getParking(parkingIds: List<String>) {
@@ -121,7 +125,7 @@ private fun getParking(parkingIds: List<String>) {
     DefaultApi().parkingsIdGet(
         id = parkingId,
     )
-    println("⬇️Retrieved parking=$parkingId!")
+    if (logActions) println("⬇️Retrieved parking=$parkingId!")
 }
 
 private fun freeParkingSpot(parkingIds: List<String>) {
@@ -131,7 +135,7 @@ private fun freeParkingSpot(parkingIds: List<String>) {
         id = parkingId,
         spotId = spotId.toString(),
     )
-    println("🏁Freed parking=$parkingId spot=$spotId!")
+    if (logActions) println("🏁Freed parking=$parkingId spot=$spotId!")
 }
 
 private fun bookParkingSpot(parkingIds: List<String>) {
@@ -142,5 +146,5 @@ private fun bookParkingSpot(parkingIds: List<String>) {
         spotId = spotId.toString(),
         body = RestBookParkingSpotRequest(licensePlate = randomLicencePlate())
     )
-    println("✅Booked parking=$parkingId spot=$spotId!")
+    if (logActions) println("✅Booked parking=$parkingId spot=$spotId!")
 }
